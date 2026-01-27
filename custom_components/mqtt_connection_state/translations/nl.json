@@ -1,0 +1,48 @@
+{
+  "title": "MQTT connection state",
+  "config": {
+    "step": {
+      "user": {
+        "title": "MQTT connection state",
+        "description": "Kies een apparaat om te configureren.",
+        "data": {
+          "device_id": "Apparaat"
+        }
+      },
+      "from_discovery": {
+        "title": "MQTT connection state",
+        "description": "Configureren vanuit ontdekt: \"{device_name}\".\nTopic: \"{connection_topic}\"."
+      }
+    },
+    "error": {
+      "unknown": "Er is een onbekende fout opgetreden",
+      "device_unknown": "Dit is een onbekend apparaat, wijzig alstublieft uw selectie.",
+      "no_connection_topic": "Geen topic gevonden dat eindigt op /availability of /status"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connection_state": {
+        "name": "Verbinding",
+        "state": {
+          "on": "Verbonden",
+          "off": "Verbroken"
+        }
+      }
+    }
+  },
+  "issues": {
+    "orphaned_device": {
+      "title": "Verbindingsstatus sensor zonder primair apparaat",
+      "description": "De verbindingsstatus sensor voor \"{name}\" is niet langer gekoppeld aan het primaire apparaat. Deze moet worden verwijderd of het primaire apparaat opnieuw geconfigureerd.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Niet gekoppelde verbindingsstatus sensor",
+            "description": "Klik op verzenden om de verbindingsstatus sensor voor \"{name}\" te verwijderen."
+          }
+        }
+      }
+    }
+  }
+}

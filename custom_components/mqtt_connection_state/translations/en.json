@@ -1,0 +1,48 @@
+{
+  "title": "MQTT connection state",
+  "config": {
+    "step": {
+      "user": {
+        "title": "MQTT connection state",
+        "description": "Choose a device to configure.",
+        "data": {
+          "device_id": "Device"
+        }
+      },
+      "from_discovery": {
+        "title": "MQTT connection state",
+        "description": "Configure from discovered: \"{device_name}\".\nTopic: \"{connection_topic}\"."
+      }
+    },
+    "error": {
+      "unknown": "An unknown error occurred",
+      "device_unknown": "This is an unknown device, please change your selection.",
+      "no_connection_topic": "No topic found ending in /availability or /state"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connection_state": {
+        "name": "Connection",
+        "state": {
+          "on": "Connected",
+          "off": "Disconnected"
+        }
+      }
+    }
+  },
+  "issues": {
+    "orphaned_device": {
+      "title": "Connection state sensor without primary device",
+      "description": "The connection state sensor for \"{name}\" is no longer linked to the primary device. It must be removed or the primary device reconfigured.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Connection state sensor without primary device",
+            "description": "Click submit to remove the connection state sensor for \"{name}\"."
+          }
+        }
+      }
+    }
+  }
+}

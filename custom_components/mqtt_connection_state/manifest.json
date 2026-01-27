@@ -1,0 +1,11 @@
+{
+  "domain": "mqtt_connection_state",
+  "name": "MQTT connection state",
+  "version": "0.1.0",
+  "codeowners": ["@studioIngrid"],
+  "requirements": [],
+  "dependencies": ["mqtt"],
+  "documentation": "https://github.com/studioIngrid/mqtt_connection_state",
+  "iot_class": "local_polling",
+  "config_flow": true
+}
