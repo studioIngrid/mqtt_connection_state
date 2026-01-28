@@ -1,18 +1,66 @@
-# MQTT connection state
+# 🔌 MQTT Connection State
 
-This custom integration creates a diagnostic sensor for MQTT devices that shows the **MQTT connection state** of the device based on its MQTT availability or state topic.
+This custom integration creates a diagnostic sensor for MQTT devices that shows the **MQTT connection state** of a device based on its MQTT *availability* or *state* topic.
 
 > [!CAUTION]
-> This integration is still in beta.
+> 🚧 This integration is still in **beta**.
 
-It automatically:
+## What it can do ✅
 
-* Discovers MQTT devices
-* Finds their availability topic
-* Updates when device names or topics change
-* Raises a Repair issue when the device becomes orphaned
+It can:
 
-## Features
+* 🔍 **Discover** MQTT devices with connection topics
+* 🔄 **Auto-update** when device information or topics change
+* 🚨 Raise **Repair issues** when a device becomes orphaned
+* ⚡ Use **actions** for bulk setup in new installs
+
+## 🔗 Quick Go To
+
+* [Installation](#installation)
+* [Features](#features)
+* [Actions](#actions)
+
+## 📦 Installation
+
+### 🧩 HACS
+
+* Go to the HACS dashboard (`/hacs/dashboard`)
+* Select the three dots in the top-right corner → **Custom repositories**
+* Fill in the repository:
+
+```
+https://github.com/studioIngrid/mqtt_connection_state
+```
+
+Type: `integration`
+
+* Click *Add*, then close the popup
+* Search for:
+
+```
+MQTT connection state
+```
+
+* Click *Download* (bottom right)
+* Restart Home Assistant
+* Go to *Settings* → *Devices & Services* → *Integrations*
+* Manually add the first device:
+   *Add integration* → search for *MQTT connection state → *Select a device*
+* Within the first 10 minutes, discovered devices should appear for easy configuration
+* For configuring multiple devices, see [Actions](#actions)
+
+### 🛠️ Manual
+
+* Download the contents of this repository
+* Add the folder to your config at:
+   `config/custom_components/mqtt_connection_state`
+* Restart Home Assistant
+* Manually add the first device:
+    *Add integration* → search for *MQTT connection state → *Select a device*
+* Within the first 10 minutes, discovered devices should appear for easy configuration
+* For configuring multiple devices, see [Actions](#actions)
+
+## ✨ Features
 
 ### 🔍 Automatic Discovery
 
@@ -21,46 +69,80 @@ It automatically:
 
 ### 🚨 Orphan Detection & Repairs
 
-* If the connection sensor loses its parent (e.g. device drop off), a **Home Assistant Repair issue** is raised.
-* When the parent is rediscovered, the issue is closed.
-* Or easily delete the connection sensor from the issue.
+* If the connection sensor loses its parent (e.g. device drops off), a **Home Assistant Repair issue** is raised
+* When the parent is rediscovered, the issue is automatically closed
+* Alternatively, you can delete the connection sensor directly from the issue
 
 ### 🧩 Entity Behavior
 
 The device gets one entity: `binary_sensor.<device_name>_connection_state`
 
-* Displayed names can be translated, currently EN and NL are available.
+* Displayed names can be translated
+* Currently supported languages: **EN** and **NL**
 
-## Installation
+### Bulk setup
 
-### HACS
+The integration can automatically complete configuration for discovered devices.
+This avoids having to click *Add* a hundred (or more 😉) times.
+There are two actions you can use to list devices available for setup, and bulk confirm configuration. See [Actions](#actions) for details.
 
-* Go to the HACS dashboard (/hacs/dashboard) and select the three dots in the top right corner. Select *Custom repositories*.
-* In repository fill:
+## ⚙️ Actions
+
+### 📋 List New Devices
+
+When you first install the integration, you may have **many devices** to add.
+This action returns a list of newly discovered devices, which you can then use for bulk setup with *Add new devices*.
+
+Example response:
 
 ```
-https://github.com/studioIngrid/mqtt_connection_state
+new_devices: |-
+  [
+    {
+      "id": "c940be963f2b3080a1d48fc5f9973298",
+      "name": "Livingroom motion"
+    },
+    {
+      "id": "bf3414747ac5107f90f389a78420ece3",
+      "name": "Livingroom climate"
+    },
+  ]
 ```
 
-Type: `integration`
+To prepare this list as input for *Add new devices*.
 
-* Click *Add*, and close the popup.
-* Then search for:
+
+### ➕ Add New Devices
+
+Only **previously discovered devices** can be bulk added.
+
+The required input is a JSON string (format shown below).
+Only the `"id"` field is used; all other attributes are ignored.
 
 ```
-MQTT connection state
+  [
+    {
+      "id": "c940be963f2b3080a1d48fc5f9973298",
+    },
+    {
+      "id": "bf3414747ac5107f90f389a78420ece3",
+      "name": "Livingroom climate" <------ # optional, will be ignored
+    },
+  ]
 ```
 
-* Click `Download` in the bottom right.
-* Restart Home Assistant.
-* Go to *Settings* > *Devices & Services* > *Integrations*
-* You have to manually add the first device. Click *Add integration* > Search for *MQTT connection state* > *Select a device*.
-* Within the first 10 minutes you should see the discovered devices on your network, for easy configuration.
+#### 🧪 Prepare Output from *List new devices*
 
-### Manual
+Notes on JSON formatting:
 
-* Download the contents of this repository.
-* Add the respective folder to your config in `config/custom_components/mqtt_connection_state`.
-* Restart Home Assistant.
-* You have to manually add the first device. Click *Add integration* > Search for *MQTT connection state* > *Select a device*.
-* Within the first 10 minutes you should see the discovered devices on your network, for easy configuration.
+* In JSON indentation is not important
+* Brackets and commas are important
+* Remove the first line: `new_devices: |-`
+* Remove unwanted devices from `{` to `},`
+* Pure JSON does not allow trailing commas, however, Python’s JSON parser (used by Home Assistant) does
+* You can validate your JSON using a tool like
+  [curious concept JSON formatter](https://jsonformatter.curiousconcept.com/)
+  (enable **fix JSON** to allow trailing commas)
+* If using an LLM, note that the string will be evaluated using Python’s `json.loads()`
+
+

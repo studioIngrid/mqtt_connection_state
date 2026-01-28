@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any
+
+import voluptuous as vol
 
 from homeassistant.components.mqtt import (
     async_subscribe,
@@ -12,26 +15,53 @@ from homeassistant.components.mqtt import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.core import (
+    Event,
+    EventStateChangedData,
+    HomeAssistant,
+    ServiceCall,
+    ServiceResponse,
+    SupportsResponse,
+    callback,
+)
+from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr, issue_registry as ir
 from homeassistant.helpers.event import (
     async_track_device_registry_updated_event,
     async_track_time_interval,
 )
-from homeassistant.helpers.typing import Any, ConfigType
+from homeassistant.helpers.service import async_register_admin_service
+from homeassistant.helpers.typing import ConfigType
 
-from .const import CONF_DEVICE_ID, CONF_DISCOVERY_INTERVAL, CONF_TOPIC, DOMAIN
+from .const import (
+    CONF_DEVICE_ID,
+    CONF_DISCOVERY_INTERVAL,
+    CONF_TOPIC,
+    DOMAIN,
+    SERV_ADD_NEW_DEVICES,
+)
 from .discovery import async_discover_devices, async_trigger_discovery
+from .services import async_setup_services
 
 _LOGGER = logging.getLogger(__name__)
+
+SCHEMA_NEW_CONFIG_ENTRY = vol.Schema({vol.Required("list"): str})
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up discovery once."""
 
-    if DOMAIN in hass.data:  # already done
+    hass.data.setdefault(DOMAIN, {})
+
+    if hass.data[DOMAIN].get("_initialized"):  # already setup
         return True
-    hass.data[DOMAIN] = {}
+    hass.data[DOMAIN]["_initialized"] = True
+
+    if "new_devices" not in hass.data[DOMAIN]:
+        hass.data[DOMAIN]["new_devices"] = []
+    if "seen_device_ids" not in hass.data[DOMAIN]:
+        hass.data[DOMAIN]["seen_device_ids"] = set()
 
     _LOGGER.info("Setup discovery")
     if not await async_wait_for_mqtt_client(hass):
@@ -63,6 +93,80 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     async_track_time_interval(
         hass, _async_discovery, CONF_DISCOVERY_INTERVAL, cancel_on_shutdown=True
+    )
+
+    # Register custom services in services.py
+    async_setup_services(hass)
+
+    async def async_handle_add_config_entry(call: ServiceCall) -> ServiceResponse:
+        """Service handler for adding a config entry."""
+
+        try:
+            payload = json.loads(call.data.get("list"))
+
+        except ValueError as Err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="Invalid JSON string",
+                translation_placeholders={},
+            ) from Err
+
+        # when flow is completed, call.hass.config_entries.flow._progress is changed, first collect the id's then execute
+
+        ids: set[str] = {item["id"] for item in payload if "id" in item}
+
+        domain_entries = call.hass.config_entries.async_entries(DOMAIN)
+        configured_device_ids: set[str] = {
+            entry.data["device_id"]
+            for entry in domain_entries
+            if "device_id" in entry.data
+        }
+        configured_ids = ids & configured_device_ids
+
+        to_configure: list[dict] = []
+        for flow in list(call.hass.config_entries.flow._progress.values()):  # noqa: SLF001
+            device_id = flow.init_data.get("device_id")
+            if device_id in (ids - configured_device_ids):
+                to_configure.append(
+                    {
+                        "flow_id": flow.flow_id,
+                        "user_input": flow.init_data,
+                    }
+                )
+
+        created: set[str] = set()
+        failed: set[str] = set()
+
+        for flow in to_configure:
+            result = await call.hass.config_entries.flow._async_configure(  # noqa: SLF001
+                flow["flow_id"],
+                flow["user_input"],
+            )
+            device_id = flow["user_input"].get("device_id")
+
+            if result["type"] == FlowResultType.CREATE_ENTRY:
+                created.add(device_id)
+            else:
+                failed.add(device_id)
+
+        return {
+            "response": {
+                "devices_requested": len(ids),
+                "devices_already_configured": len(configured_ids),
+                "devices_to_configure": len(to_configure),
+                "devices_configure_success": len(created),
+                "devices_configure_fail": len(failed),
+                "device_ids": {"success": created, "failed": failed},
+            }
+        }
+
+    async_register_admin_service(
+        hass,
+        DOMAIN,
+        SERV_ADD_NEW_DEVICES,
+        async_handle_add_config_entry,
+        schema=SCHEMA_NEW_CONFIG_ENTRY,
+        supports_response=SupportsResponse.OPTIONAL,
     )
 
     return True
