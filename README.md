@@ -68,7 +68,7 @@ Availability is **disabled by default** in Zigbee2MQTT. If no availability topic
 
 #### Short version
 
-Use a file editor such as the **File Editor** add-on or **Studio Code Server** to 0pen the Zigbee2MQTT `configuration.yaml` file.
+Use a file editor such as the **File Editor** add-on or **Studio Code Server** to open the Zigbee2MQTT `configuration.yaml` file.
 
 **Z2M Docker users**: you are likely already familiar with this file.
 **Z2M add-on users**: availability cannot be enabled via the add-on configuration UI. In the add-on configuration page, note the value of "data_path" (the first field). Navigate to the folder specified in `data_path` and open `z2m/configuration.yaml`.
