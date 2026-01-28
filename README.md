@@ -126,7 +126,7 @@ Only the `"id"` field is used; all other attributes are ignored.
     {
       "id": "bf3414747ac5107f90f389a78420ece3",
       "name": "Livingroom climate" <------ # optional, will be ignored
-    },
+    } <------ no trailing comma
   ]
 ```
 
