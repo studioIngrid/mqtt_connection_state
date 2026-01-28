@@ -101,6 +101,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async def async_handle_add_config_entry(call: ServiceCall) -> ServiceResponse:
         """Service handler for adding a config entry."""
 
+        _LOGGER.debug("Run add devices action")
         try:
             payload = json.loads(call.data.get("list"))
 
@@ -124,7 +125,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         configured_ids = ids & configured_device_ids
 
         to_configure: list[dict] = []
-        for flow in list(call.hass.config_entries.flow._progress.values()):  # noqa: SLF001
+        for flow in list(call.hass.config_entries.flow._progress.values()): # noqa: SLF001
+            if flow.handler is not DOMAIN:
+                continue
+
             device_id = flow.init_data.get("device_id")
             if device_id in (ids - configured_device_ids):
                 to_configure.append(
@@ -160,6 +164,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             }
         }
 
+    _LOGGER.debug("Setup admin services")
     async_register_admin_service(
         hass,
         DOMAIN,

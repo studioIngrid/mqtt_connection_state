@@ -114,7 +114,7 @@ To prepare this list as input for *Add new devices*.
 
 ### ➕ Add New Devices
 
-Only **previously discovered devices** can be bulk added.
+This action can only be performed by **admins**. And only **previously discovered devices** can be bulk added.
 
 The required input is a JSON string (format shown below).
 Only the `"id"` field is used; all other attributes are ignored.
@@ -139,10 +139,9 @@ Notes on JSON formatting:
 * Brackets and commas are important
 * Remove the first line: `new_devices: |-`
 * Remove unwanted devices from `{` to `},`
-* Pure JSON does not allow trailing commas, however, Python’s JSON parser (used by Home Assistant) does
-* You can validate your JSON using a tool like
-  [curious concept JSON formatter](https://jsonformatter.curiousconcept.com/)
-  (enable **fix JSON** to allow trailing commas)
+* JSON does not allow trailing commas
+* You can validate your JSON using a tool like [curious concept JSON formatter](https://jsonformatter.curiousconcept.com/)
+  (enable **fix JSON** to remove trailing commas)
 * If using an LLM, note that the string will be evaluated using Python’s `json.loads()`
 
 
