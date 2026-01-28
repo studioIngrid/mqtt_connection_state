@@ -111,7 +111,6 @@ new_devices: |-
 
 To prepare this list as input for *Add new devices*.
 
-
 ### ➕ Add New Devices
 
 This action can only be performed by **admins**. And only **previously discovered devices** can be bulk added.
@@ -143,5 +142,3 @@ Notes on JSON formatting:
 * You can validate your JSON using a tool like [curious concept JSON formatter](https://jsonformatter.curiousconcept.com/)
   (enable **fix JSON** to remove trailing commas)
 * If using an LLM, note that the string will be evaluated using Python’s `json.loads()`
-
-
