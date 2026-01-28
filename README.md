@@ -51,6 +51,8 @@ MQTT connection state
 
 ### 🛠️ Manual
 
+The prefered method is using HACS, their you can be informed about new releases.
+
 * Download the contents of this repository
 * Add the folder to your config at:
    `config/custom_components/mqtt_connection_state`
@@ -59,6 +61,31 @@ MQTT connection state
     *Add integration* → search for *MQTT connection state → *Select a device*
 * Within the first 10 minutes, discovered devices should appear for easy configuration
 * For configuring multiple devices, see [Actions](#actions)
+
+### 🐝 Zigbee2MQTT
+
+Availability is **disabled by default** in Zigbee2MQTT. If no availability topic is found, the device will **not** be discovered. To enable availability in `configuration.yaml`, see the official documentation: [Zigbee2MQTT Device Availability](https://www.zigbee2mqtt.io/guide/configuration/device-availability.html)
+
+#### Short version
+
+Use a file editor such as the **File Editor** add-on or **Studio Code Server** to 0pen the Zigbee2MQTT `configuration.yaml` file.
+
+**Z2M Docker users**: you are likely already familiar with this file.
+**Z2M add-on users**: availability cannot be enabled via the add-on configuration UI. In the add-on configuration page, note the value of "data_path" (the first field). Navigate to the folder specified in `data_path` and open `z2m/configuration.yaml`.
+
+Add or update the following settings:
+
+```yaml
+device_options:
+  homeassistant:
+    last_seen:
+      enabled_by_default: true
+      availability: []
+availability:
+  enabled: true
+```
+
+After this, Zigbee2MQTT will publish availability topics, allowing devices to be discovered correctly.
 
 ## ✨ Features
 
@@ -126,7 +153,7 @@ Only the `"id"` field is used; all other attributes are ignored.
     {
       "id": "bf3414747ac5107f90f389a78420ece3",
       "name": "Livingroom climate" <------ # optional, will be ignored
-    } <------ no trailing comma
+    },
   ]
 ```
 
