@@ -1,0 +1,14 @@
+list_new_devices:
+  name: List new devices
+  description: "This action is intented to help with primary setup. You can review all compatible devices, and then feed the list into the add_devices action."
+add_new_devices:
+  name: Add list of devices
+  description: "This action only accepts a JSON string: \"[{\"id\":\"1a2f\"]}]\". Click on the question mark on the right to view the README, in Quick Goto click Actions."
+  fields:
+    list:
+      name: List of devices to add
+      description: "Pay attention to formatting: [{\"id\":\"1a2f\"]}]"
+      required: true
+      example: "[{\"id\":\"1a2f\"]}]"
+      selector:
+        template:

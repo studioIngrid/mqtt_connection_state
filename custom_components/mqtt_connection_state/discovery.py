@@ -21,8 +21,8 @@ async def async_discover_devices(hass: HomeAssistant) -> list[DeviceEntry]:
 
     discovered_devices: list[DeviceEntry] = []
 
-    domain_data = hass.data.setdefault(DOMAIN, {})
-    seen_device_ids: set[str] = domain_data.setdefault("seen_device_ids", set())
+    seen_device_ids = hass.data[DOMAIN]["seen_device_ids"]
+    new_devices = hass.data[DOMAIN]["new_devices"]
 
     # Get already configured device IDs for this integration
     domain_entries = hass.config_entries.async_entries(DOMAIN) or []
@@ -60,6 +60,7 @@ async def async_discover_devices(hass: HomeAssistant) -> list[DeviceEntry]:
             continue
 
         seen_device_ids.add(device_entry.id)
+        new_devices.append({"id": device_entry.id, "name": device_entry.name})
         discovered_devices.append(device_entry)
 
     _LOGGER.debug(
