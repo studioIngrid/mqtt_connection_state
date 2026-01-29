@@ -18,10 +18,9 @@ VERSION = manifest_data.get("version")
 DOMAIN_NAME = "MQTT connection state"
 
 CONF_DEVICE_ID = "device_id"
-CONF_TOPIC = "topic"
+CONF_DISCOVERY_INTERVAL = timedelta(minutes=10)
 CONF_ERROR_BASE = "base"
+CONF_TOPIC = "topic"
 
 SERV_LIST_NEW_DEVICES = "list_new_devices"
 SERV_ADD_NEW_DEVICES = "add_new_devices"
-
-CONF_DISCOVERY_INTERVAL = timedelta(minutes=10)
