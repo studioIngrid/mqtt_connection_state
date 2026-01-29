@@ -1,7 +1,7 @@
 {
   "domain": "mqtt_connection_state",
   "name": "MQTT connection state",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "codeowners": ["@studioIngrid"],
   "requirements": [],
   "dependencies": ["mqtt"],

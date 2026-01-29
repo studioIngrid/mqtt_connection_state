@@ -13,12 +13,14 @@ It can:
 * 🔄 **Auto-update** when device information or topics change
 * 🚨 Raise **Repair issues** when a device becomes orphaned
 * ⚡ Use **actions** for bulk setup in new installs
+* 🔔 Easily trigger **notification automations** using events
 
 ## 🔗 Quick Go To
 
-* [Installation](#installation)
-* [Features](#features)
-* [Actions](#actions)
+* [Installation](#-installation)
+* [Features](#-features)
+* [Actions](#%EF%B8%8F-actions)
+* [Automation ideas](#-automation-ideas)
 
 ## 📦 Installation
 
@@ -107,11 +109,26 @@ The device gets one entity: `binary_sensor.<device_name>_connection_state`
 * Displayed names can be translated
 * Currently supported languages: **EN** and **NL**
 
-### Bulk setup
+### ⚡ Bulk setup
 
 The integration can automatically complete configuration for discovered devices.
 This avoids having to click *Add* a hundred (or more 😉) times.
 There are two actions you can use to list devices available for setup, and bulk confirm configuration. See [Actions](#actions) for details.
+
+### 🔔 Events
+
+This integration fires an event on **every connection state change**, which makes event-based automations the most flexible and scalable approach.
+
+Example of event format:
+
+```
+event_type: mqtt_connection_state_changed
+data:
+  state: offline
+  device_id: c940be963f2b3080a1d48fc5f9973298
+  device_name: Livingroom motion
+  entity_id: binary_sensor.livingroom_motion_connection_state
+```
 
 ## ⚙️ Actions
 
@@ -169,3 +186,104 @@ Notes on JSON formatting:
 * You can validate your JSON using a tool like [curious concept JSON formatter](https://jsonformatter.curiousconcept.com/)
   (enable **fix JSON** to remove trailing commas)
 * If using an LLM, note that the string will be evaluated using Python’s `json.loads()`
+
+## 🔔 Automation ideas
+
+To get notified when devices go offline or come back online, you can create automations based on **events**.
+This integration fires an event on **every connection state change**, which makes event-based automations the most flexible and scalable approach.
+
+You can use these fields directly in triggers for automations.
+
+### 📩 Basic notifications for offline devices
+
+Create an automation triggered by the `mqtt_connection_state_changed` event.
+
+> **Recommended:** Add a condition that checks whether your bridge (for example Zigbee2MQTT) is online. This helps prevent a burst of notifications during Home Assistant startup.
+
+Event type:
+
+```
+mqtt_connection_state_changed
+```
+
+Event data:
+
+```
+state: offline
+```
+
+![example of group event_trigger](images/group_event_trigger.png "group_event_trigger")
+
+Example automation:
+
+```
+alias: "Notify conecction state offline"
+description: "Using the mqtt_conecction_state events for monitoring"
+mode: parallel
+max: 50
+trace:
+  stored_traces: 50
+triggers:
+  - trigger: event
+    event_type: mqtt_connection_state_changed
+    event_data:
+      state: offline
+conditions:
+  - condition: state
+    entity_id: binary_sensor.zigbee2mqtt_bridge_connection_state
+    state: "on"
+    for:
+      minutes: 1
+actions:
+  - alias: Report offline devices in HA notifications
+    action: persistent_notification.create
+    data:
+      title: Device offline
+      message: >-
+        {{ trigger.event.data.device_name }} went offline</br></br>
+        <small><a href="/config/devices/device/{{ trigger.event.data.device_id }}">Device</a></small></br>
+        <small>{{ now()  | as_timestamp | timestamp_custom('%H:%M') }}</small>
+  - alias: If important device send notification to phone
+    if:
+      - condition: template
+        value_template: >-
+          {% set important_devices = [
+            'binary_sensor.livingroom_motion_connection_state',
+            'binary_sensor.livingroom_climate_connection_state'
+          ] %}
+          {{ trigger.event.data.entity_id in important_devices }}
+    then:
+      - action: notify.mobile_app_iphone
+        data:
+          title: Device offline
+          message: "{{ trigger.event.data.device_name }} went offline"
+```
+
+### 🎯 Automations for a specific device
+
+If you only want to monitor a specific device, you can choose from multiple trigger types depending on your preference and use case.
+
+#### Device trigger
+
+Use the device trigger when you prefer selecting the device through the UI and keeping the automation device-centered.
+
+![example of device_trigger](images/device_trigger.png "device_trigger")
+
+#### Entity trigger
+
+Use the entity trigger if you want easy to read YAML.
+
+![example of entity_trigger](images/entity_trigger.png "entity_trigger")
+
+#### Event trigger
+
+Use an event trigger and include a unique identifier such as `device_id` or `entity_id` in the event data as a filter.
+
+Example event data:
+
+```
+state: offline
+device_id: c940be963f2b3080a1d48fc5f9973298
+```
+
+![example of event_trigger](images/event_trigger.png "event_trigger")

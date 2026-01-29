@@ -22,7 +22,7 @@ from homeassistant.helpers.entity import DeviceInfo, async_generate_entity_id
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import async_track_device_registry_updated_event
 
-from .const import CONF_DEVICE_ID, CONF_TOPIC
+from .const import CONF_DEVICE_ID, CONF_TOPIC, DOMAIN
 from .helpers import find_connection_topic
 
 _LOGGER = logging.getLogger(__name__)
@@ -241,6 +241,21 @@ class MqttConnectionSensorEntity(BinarySensorEntity):
         self._attr_available = True
 
         if old_state != self._attr_is_on or not old_available:
+            if self._attr_is_on:
+                event_data = {
+                    "state": "online",
+                    "device_id": self._device_id,
+                    "device_name": self.device_entry.name,
+                    "entity_id": self.entity_id,
+                }
+            else:
+                event_data = {
+                    "state": "offline",
+                    "device_id": self._device_id,
+                    "device_name": self.device_entry.name,
+                    "entity_id": self.entity_id,
+                }
+            self.hass.bus.async_fire(DOMAIN + "_changed", event_data)
             self.async_write_ha_state()
 
     @property
