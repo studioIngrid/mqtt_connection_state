@@ -49,7 +49,7 @@ MQTT connection state
 * Manually add the first device:
    *Add integration* → search for *MQTT connection state → *Select a device*
 * Within the first 10 minutes, discovered devices should appear for easy configuration
-* For configuring multiple devices, see [Actions](#actions)
+* For configuring multiple devices, see [Actions](#%EF%B8%8F-actions)
 
 ### 🛠️ Manual
 
@@ -62,7 +62,7 @@ The prefered method is using HACS, their you can be informed about new releases.
 * Manually add the first device:
     *Add integration* → search for *MQTT connection state → *Select a device*
 * Within the first 10 minutes, discovered devices should appear for easy configuration
-* For configuring multiple devices, see [Actions](#actions)
+* For configuring multiple devices, see [Actions](#%EF%B8%8F-actions)
 
 ### 🐝 Zigbee2MQTT
 
@@ -113,7 +113,7 @@ The device gets one entity: `binary_sensor.<device_name>_connection_state`
 
 The integration can automatically complete configuration for discovered devices.
 This avoids having to click *Add* a hundred (or more 😉) times.
-There are two actions you can use to list devices available for setup, and bulk confirm configuration. See [Actions](#actions) for details.
+There are two actions you can use to list devices available for setup, and bulk confirm configuration. See [Actions](#%EF%B8%8F-actions) for details.
 
 ### 🔔 Events
 
