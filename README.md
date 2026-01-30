@@ -86,7 +86,7 @@ availability:
 After enabling this, availability topics will be published and devices can be discovered correctly ✅
 
 > 💡 **Tip — keep “last seen” available even when a device is offline**
-> Add or update the following in `configuration.yaml` of your zigbee :
+> Add or update the following in `configuration.yaml` of your zigbee instance:
 >
 > ```
 > device_options:
