@@ -114,7 +114,7 @@ After enabling this, availability topics will be published and devices can be di
 The device gets one entity: `binary_sensor.<device_name>_connection_state`
 
 * Displayed names can be translated
-* Currently supported languages: **EN** and **NL**
+* Currently supported languages: **EN**, **NL** and **SV**
 
 ### ⚡ Bulk setup
 
