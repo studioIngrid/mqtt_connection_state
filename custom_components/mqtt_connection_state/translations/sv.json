@@ -1,0 +1,48 @@
+{
+  "title": "MQTT anslutningsstatus",
+  "config": {
+    "step": {
+      "user": {
+        "title": "MQTT anslutningsstatus",
+        "description": "Välj en enhet att konfigurera.",
+        "data": {
+          "device_id": "Enhet"
+        }
+      },
+      "from_discovery": {
+        "title": "MQTT anslutningsstatus",
+        "description": "Konfigurera från upptäckt: \"{device_name}\".\nÄmne: \"{connection_topic}\"."
+      }
+    },
+    "error": {
+      "unknown": "Ett okänt fel inträffade",
+      "device_unknown": "Detta är en okänd enhet, vänligen ändra ditt val.",
+      "no_connection_topic": "Inget ämne hittades som slutar på /availability eller /state"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connection_state": {
+        "name": "Anslutning",
+        "state": {
+          "on": "Ansluten",
+          "off": "Frånkopplad"
+        }
+      }
+    }
+  },
+  "issues": {
+    "orphaned_device": {
+      "title": "Anslutningsstatussensor saknar primär enhet",
+      "description": "Anslutningsstatussensorn för \"{name}\" är inte längre kopplad till den primära enheten. Den behöver tas bort eller så behöver den primära enheten konfigureras om.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Anslutningsstatussensor saknar primär enhet",
+            "description": "Klicka på Skicka för att ta bort anslutningsstatussensorn för \"{name}\"."
+          }
+        }
+      }
+    }
+  }
+}
