@@ -66,28 +66,35 @@ The prefered method is using HACS, their you can be informed about new releases.
 
 ### 🐝 Zigbee2MQTT
 
-Availability is **disabled by default** in Zigbee2MQTT. If no availability topic is found, the device will **not** be discovered. To enable availability in `configuration.yaml`, see the official documentation: [Zigbee2MQTT Device Availability](https://www.zigbee2mqtt.io/guide/configuration/device-availability.html)
+Availability is **disabled by default** in Zigbee2MQTT. If no availability topic is published, the device will **not** be discovered by this integration.
+
+You can enable availability either in the **web UI** or via `configuration.yaml`. See the official documentation for full details:
+[Zigbee2MQTT Device Availability](https://www.zigbee2mqtt.io/guide/configuration/device-availability.html)
 
 #### Short version
 
-Use a file editor such as the **File Editor** add-on or **Studio Code Server** to open the Zigbee2MQTT `configuration.yaml` file.
+**Z2M add-on users**: Open the Zigbee2MQTT web UI → Settings → Settings tab → Availability sub-tab → enable Availability.
+Restart the add-on for the change to take effect.
 
-**Z2M Docker users**: you are likely already familiar with this file.
-**Z2M add-on users**: availability cannot be enabled via the add-on configuration UI. In the add-on configuration page, note the value of "data_path" (the first field). Navigate to the folder specified in `data_path` and open `z2m/configuration.yaml`.
-
-Add or update the following settings:
+**Z2M Docker users**: Edit `configuration.yaml` and add or update:
 
 ```yaml
-device_options:
-  homeassistant:
-    last_seen:
-      enabled_by_default: true
-      availability: []
 availability:
   enabled: true
 ```
 
-After this, Zigbee2MQTT will publish availability topics, allowing devices to be discovered correctly.
+After enabling this, availability topics will be published and devices can be discovered correctly ✅
+
+> 💡 **Tip — keep “last seen” available even when a device is offline**
+> Add or update the following in `configuration.yaml` of your zigbee :
+>
+> ```
+> device_options:
+>   homeassistant:
+>     last_seen:
+>       enabled_by_default: true
+>       availability: []
+> ```
 
 ## ✨ Features
 
