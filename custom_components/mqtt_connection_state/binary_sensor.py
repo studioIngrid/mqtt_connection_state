@@ -175,15 +175,23 @@ class MqttConnectionSensorEntity(BinarySensorEntity):
                 self._handle_message_updates(None)
                 return
 
-            try:
-                payload = json.loads(message.payload)
-            except ValueError:
-                _LOGGER.warning(
-                    "Invalid JSON payload on %s: %s",
-                    message.topic,
-                    message.payload,
-                )
-                return
+            if isinstance(message.payload, bytes):
+                payload_raw = message.payload.decode("utf-8", errors="ignore").strip()
+            else:
+                payload_raw = str(message.payload).strip()
+
+            if payload_raw.startswith(("{", "[")):
+                try:
+                    payload = json.loads(payload_raw)
+                except ValueError:
+                    _LOGGER.warning(
+                        "Invalid JSON payload on %s: %s",
+                        message.topic,
+                        payload_raw,
+                    )
+                    return
+            else:
+                payload = {"state": payload_raw}
 
             self._handle_message_updates(payload)
 
