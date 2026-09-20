@@ -12,3 +12,13 @@ add_new_devices:
       example: "[{\"id\":\"1a2f\"]}]"
       selector:
         template:
+remove_duplicate_entries:
+  name: Remove duplicate config entries
+  description: "Groups this integration's config entries by the device they track, keeps the oldest of each group and removes the rest. Call once with dry_run enabled to review the response, then again with dry_run off to remove them."
+  fields:
+    dry_run:
+      name: Dry run
+      description: "When enabled (default), only report which entries would be removed. Disable to actually remove them."
+      default: true
+      selector:
+        boolean:

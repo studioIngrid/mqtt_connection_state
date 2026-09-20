@@ -10,7 +10,7 @@ from homeassistant.helpers import device_registry as dr, discovery_flow
 from homeassistant.helpers.device_registry import DeviceEntry
 
 from .const import CONF_DEVICE_ID, DOMAIN
-from .helpers import find_connection_topic
+from .helpers import configured_source_device_ids, find_connection_topic
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,23 +24,24 @@ async def async_discover_devices(hass: HomeAssistant) -> list[DeviceEntry]:
     seen_device_ids = hass.data[DOMAIN]["seen_device_ids"]
     new_devices = hass.data[DOMAIN]["new_devices"]
 
-    # Get already configured device IDs for this integration
-    domain_entries = hass.config_entries.async_entries(DOMAIN) or []
-    known_devices = {
-        entry.data.get(CONF_DEVICE_ID)
-        for entry in domain_entries
-        if entry.data.get(CONF_DEVICE_ID)
-    }
+    # Devices already configured here, keyed by resolved identity so a device
+    # whose id changed in the Home Assistant 2026.8 migration is still matched.
+    known_devices = configured_source_device_ids(hass)
 
     device_registry = dr.async_get(hass)
 
-    for device_entry in device_registry.devices.values():
+    for device_entry in device_registry.devices:
         # Skip disabled devices
         if device_entry.disabled:
             continue
 
         # Skip devices already configured for this integration
         if device_entry.id in known_devices:
+            continue
+
+        # Skip devices this integration owns (leftover duplicate/fork devices)
+        owner = hass.config_entries.async_get_entry(device_entry.primary_config_entry)
+        if owner is not None and owner.domain == DOMAIN:
             continue
 
         if device_entry.id in seen_device_ids:

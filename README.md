@@ -12,7 +12,7 @@ It can:
 
 * 🔍 **Discover** MQTT devices with connection topics
 * 🔄 **Auto-update** when device information or topics change
-* 🚨 Raise **Repair issues** for orphaned conection_state sensors
+* 🚨 Detect and clean up **duplicate entries** left by device-registry migrations
 * ⚡ Use **actions** for bulk setup in new installs
 * 🔔 Easily trigger **notification automations** using events
 
@@ -41,9 +41,9 @@ Type: `integration`
 * Search for: `MQTT connection state`
 * Click *Download* (bottom right)
 * Restart Home Assistant
-* Go to *Settings* → *Devices & Services* → *Integrations*
+* Go to *Settings* → *Devices & Services* → *Helpers*
 * Manually add the first device:
-   *Add integration* → search for *MQTT connection state → *Select a device*
+   *Create Helper* → search for *MQTT connection state* → *Select a device*
 * Newly discovered devices should appear within ~10 minutes
 * For configuring multiple devices, see [Actions](#actions)
 
@@ -139,11 +139,14 @@ OR
 * Periodically scans the device registry for MQTT devices with availability or status topics
 * If multiple topics are found, the last one is used
 
-### 🚨 Orphan Detection & Repairs
+### 🚨 Duplicate Detection & Repairs
 
-* Raises a **Repair issue** if a connection sensor loses its parent (e.g. device drops off)
-* Automatically resolves the issue when the device is rediscovered
-* Sensors can also be removed directly from the Repair issue
+* Detects duplicate config entries that point at the same MQTT device
+  (e.g. left behind by Home Assistant's 2026.8 device-registry migration)
+* Raises a fixable **Repair issue** showing how many can be removed
+* Clean them up in one click from the Repair, or run the
+  `mqtt_connection_state.remove_duplicate_entries` action
+  (`dry_run` defaults to a safe preview; set `dry_run: false` to remove)
 
 ### 🧩 Entity Behavior
 

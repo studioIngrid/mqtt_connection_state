@@ -24,3 +24,6 @@ CONF_TOPIC = "topic"
 
 SERV_LIST_NEW_DEVICES = "list_new_devices"
 SERV_ADD_NEW_DEVICES = "add_new_devices"
+SERV_REMOVE_DUPLICATE_ENTRIES = "remove_duplicate_entries"
+
+ISSUE_DUPLICATE_ENTRIES = "duplicate_entries"

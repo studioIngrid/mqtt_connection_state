@@ -32,14 +32,14 @@
     }
   },
   "issues": {
-    "orphaned_device": {
-      "title": "Anslutningsstatussensor saknar primär enhet",
-      "description": "Anslutningsstatussensorn för \"{name}\" är inte längre kopplad till den primära enheten. Den behöver tas bort eller så behöver den primära enheten konfigureras om.",
+    "duplicate_entries": {
+      "title": "Dubbletter av konfigurationsposter",
+      "description": "MQTT anslutningsstatus har {count} dubbletter av konfigurationsposter. De skapades av identifieringen efter att Home Assistant 2026.8-uppdateringen ändrade enheternas identifierare. Att åtgärda detta tar bort de extra posterna och behåller en per enhet; anslutningssensorerna som blir kvar är redan kopplade till rätt enheter och inget annat ändras. Kör först åtgärden \"MQTT anslutningsstatus: Ta bort dubbletter av konfigurationsposter\" med testkörning aktiverad för att se hela listan.",
       "fix_flow": {
         "step": {
           "confirm": {
-            "title": "Anslutningsstatussensor saknar primär enhet",
-            "description": "Klicka på Skicka för att ta bort anslutningsstatussensorn för \"{name}\"."
+            "title": "Ta bort dubbletter av konfigurationsposter",
+            "description": "Klicka på Skicka för att ta bort de dubbletter som den här integrationen skapade efter Home Assistant 2026.8-uppdateringen. En post per enhet behålls."
           }
         }
       }

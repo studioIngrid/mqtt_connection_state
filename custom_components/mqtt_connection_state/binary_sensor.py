@@ -18,12 +18,16 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STARTED, EntityCategory
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.entity import DeviceInfo, async_generate_entity_id
+from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import async_track_device_registry_updated_event
 
 from .const import CONF_DEVICE_ID, CONF_TOPIC, DOMAIN
-from .helpers import find_connection_topic, process_message_payload
+from .helpers import (
+    find_connection_topic,
+    process_message_payload,
+    resolve_source_device_id,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,15 +62,19 @@ class MqttConnectionSensorEntity(BinarySensorEntity):
             BINARY_SENSOR_DOMAIN + ".{}_connection_state", entry.title, hass=hass
         )
 
-        device_id = entry.data[CONF_DEVICE_ID]
+        # The stored id can be a pre-2026.8 merged-device id; resolve it to the
+        # current concrete MQTT device.
+        stored_device_id = entry.data[CONF_DEVICE_ID]
+        device_id = resolve_source_device_id(hass, stored_device_id) or stored_device_id
         self._device_id = device_id
 
         device_registry = dr.async_get(hass)
-        device_entry = device_registry.async_get(device_id)
 
-        self._attr_device_info = DeviceInfo(
-            identifiers=device_entry.identifiers if device_entry else None,
-        )
+        # Home Assistant 2026.8+: a device belongs to a single config entry. Link
+        # this helper entity directly to the source integration's device instead
+        # of declaring a DeviceInfo that carries that device's identifiers, which
+        # would fork a duplicate, config-entry-owned device.
+        self.device_entry = device_registry.async_get(device_id)
 
         self._attr_unique_id = f"{entry.entry_id}_connection_state"
         self._attr_is_on = None
@@ -78,6 +86,13 @@ class MqttConnectionSensorEntity(BinarySensorEntity):
         self._unsub_bridge = None
         self._message_received = None
         self._last_mqtt_message: datetime | None = None
+
+    @property
+    def _device_name(self) -> str:
+        """Best-effort device name for logs and events."""
+        if self.device_entry and self.device_entry.name:
+            return self.device_entry.name
+        return self.entry.title
 
     async def async_added_to_hass(self) -> None:
         """Run when this Entity has been added to HA."""
@@ -127,7 +142,7 @@ class MqttConnectionSensorEntity(BinarySensorEntity):
 
             _LOGGER.debug(
                 "Registry updated, check topic of %s",
-                self.device_entry.name,
+                self._device_name,
             )
             self.hass.async_create_task(_async_delayed_resolve())
 
@@ -157,7 +172,7 @@ class MqttConnectionSensorEntity(BinarySensorEntity):
                 _LOGGER.debug(
                     "Bridge online on %s, check topic of %s",
                     message.topic,
-                    self.device_entry.name,
+                    self._device_name,
                 )
                 self.hass.async_create_task(_async_delayed_resolve())
 
@@ -249,7 +264,7 @@ class MqttConnectionSensorEntity(BinarySensorEntity):
                 "topic": state_topic,
                 "state": "online" if self._attr_is_on else "offline",
                 "device_id": self._device_id,
-                "device_name": self.device_entry.name,
+                "device_name": self._device_name,
                 "entity_id": self.entity_id,
             }
 

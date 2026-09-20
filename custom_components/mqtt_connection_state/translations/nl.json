@@ -32,14 +32,14 @@
     }
   },
   "issues": {
-    "orphaned_device": {
-      "title": "Verbindingsstatus sensor zonder primair apparaat",
-      "description": "De verbindingsstatus sensor voor \"{name}\" is niet langer gekoppeld aan het primaire apparaat. Deze moet worden verwijderd of het primaire apparaat opnieuw geconfigureerd.",
+    "duplicate_entries": {
+      "title": "Dubbele configuratie-items",
+      "description": "MQTT connection state heeft {count} dubbele configuratie-items. Deze zijn door detectie aangemaakt nadat de Home Assistant 2026.8-update de apparaat-identifiers wijzigde. Dit oplossen verwijdert de extra items en houdt er één per apparaat over; de overgebleven verbindingssensoren zijn al aan de juiste apparaten gekoppeld en er verandert verder niets. Voer eerst de actie \"MQTT connection state: Dubbele configuratie-items verwijderen\" met testrun ingeschakeld uit om de volledige lijst te zien.",
       "fix_flow": {
         "step": {
           "confirm": {
-            "title": "Niet gekoppelde verbindingsstatus sensor",
-            "description": "Klik op verzenden om de verbindingsstatus sensor voor \"{name}\" te verwijderen."
+            "title": "Dubbele configuratie-items verwijderen",
+            "description": "Klik op Verzenden om de dubbele items te verwijderen die deze integratie na de Home Assistant 2026.8-update heeft aangemaakt. Er blijft één item per apparaat over."
           }
         }
       }

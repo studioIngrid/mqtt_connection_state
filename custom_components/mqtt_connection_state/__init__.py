@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any
 
 import voluptuous as vol
 
@@ -26,12 +25,14 @@ from homeassistant.core import (
 )
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import device_registry as dr, issue_registry as ir
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.event import (
     async_track_device_registry_updated_event,
     async_track_time_interval,
 )
+from homeassistant.helpers.helper_integration import async_remove_helper_devices
 from homeassistant.helpers.service import async_register_admin_service
+from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
@@ -42,6 +43,7 @@ from .const import (
     SERV_ADD_NEW_DEVICES,
 )
 from .discovery import async_discover_devices, async_trigger_discovery
+from .helpers import async_sync_duplicate_issue, resolve_source_device_id
 from .services import async_setup_services
 
 _LOGGER = logging.getLogger(__name__)
@@ -174,23 +176,77 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         supports_response=SupportsResponse.OPTIONAL,
     )
 
+    @callback
+    def _report_state(_hass: HomeAssistant) -> None:
+        """Summarise migration state once everything has loaded."""
+        healed = hass.data[DOMAIN].get("healed", 0)
+        if healed:
+            _LOGGER.info(
+                "Healed %d stale device reference(s) from before the Home Assistant "
+                "2026.8 device-registry migration",
+                healed,
+            )
+        count = async_sync_duplicate_issue(hass)
+        if count:
+            _LOGGER.info(
+                "%d duplicate config entries can be removed - see Settings > Repairs",
+                count,
+            )
+
+    async_at_started(hass, _report_state)
+
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a config entry."""
 
-    _LOGGER.info(
+    _LOGGER.debug(
         "Setup entry: %s, listening to topic: %s",
         entry.title,
         entry.data.get(CONF_TOPIC),
     )
+    hass.data.setdefault(DOMAIN, {})
     device_id = entry.data.get(CONF_DEVICE_ID)
+
+    # The stored device id may be a pre-2026.8 merged-device id that the 2026.8
+    # device-registry migration turned into a non-concrete "composite". Resolve
+    # it to the current concrete MQTT device and heal the entry, so discovery
+    # stops treating this device as unconfigured and offering it again.
+    resolved_device_id = resolve_source_device_id(hass, device_id)
+    if resolved_device_id and resolved_device_id != device_id:
+        _LOGGER.debug("Heal device reference: %s -> %s", device_id, resolved_device_id)
+        hass.data[DOMAIN]["healed"] = hass.data[DOMAIN].get("healed", 0) + 1
+        updates: dict = {"data": {**entry.data, CONF_DEVICE_ID: resolved_device_id}}
+        # Also move the unique id, unless another entry already claims it (a
+        # duplicate entry the cleanup action will remove).
+        others = {
+            other.unique_id
+            for other in hass.config_entries.async_entries(DOMAIN)
+            if other.entry_id != entry.entry_id
+        }
+        if entry.unique_id != resolved_device_id and resolved_device_id not in others:
+            updates["unique_id"] = resolved_device_id
+        hass.config_entries.async_update_entry(entry, **updates)
+        device_id = resolved_device_id
+
+    # Home Assistant 2026.8 restricts a device to a single config entry. Earlier
+    # versions merged this helper's binary sensor onto the source MQTT device via
+    # shared identifiers; that merge now produces a separate duplicate device
+    # owned by this config entry. Remove it and relink our entity (including one
+    # left detached by an earlier attempt) to the real device. Idempotent.
+    async_remove_helper_devices(
+        hass,
+        helper_config_entry_id=entry.entry_id,
+        source_device_id=device_id,
+        remove_all_devices=True,
+    )
+
     device_registry = dr.async_get(hass)
-    device_entry = device_registry.async_get(device_id)
+    tracked_device_id = device_id
 
     def _update_entry_title() -> None:
-        new_device_entry = device_registry.async_get(device_id)
+        new_device_entry = device_registry.async_get(tracked_device_id)
         if not new_device_entry:
             return
         device_name = (
@@ -202,46 +258,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.info("Change entry title: %s ->%s", entry.title, device_name)
             hass.config_entries.async_update_entry(entry, title=device_name)
 
-    def _check_primary_config_entry(old_primary_config: Any | None) -> None:
-        new_device_entry = device_registry.async_get(device_id)
-        if not new_device_entry:
-            return
-        new_primary_config = (
-            new_device_entry.primary_config_entry if new_device_entry else None
-        )
-
-        if old_primary_config is not None and new_primary_config is None:
-            _LOGGER.warning("Raise issue orphaned device: %s", entry.title)
-            ir.async_create_issue(
-                hass,
-                DOMAIN,
-                issue_id=f"orphaned_{entry.entry_id}",
-                is_fixable=True,
-                severity=ir.IssueSeverity.ERROR,
-                translation_key="orphaned_device",
-                translation_placeholders={"name": entry.title},
-            )
-        elif old_primary_config is None and new_primary_config is not None:
-            _LOGGER.info("Resolved issue orphaned device: %s", entry.title)
-            ir.async_delete_issue(hass, DOMAIN, f"orphaned_{entry.entry_id}")
-
     @callback
     def _async_device_registry_updated(event: Event[EventStateChangedData]) -> None:
         if event.data.get("action") == "update":
             changes = event.data.get("changes", {})
             if "name" in changes or "name_by_user" in changes:
                 _update_entry_title()
-                return
-
-            if "primary_config_entry" in changes:
-                _check_primary_config_entry(changes["primary_config_entry"])
-                return
 
     _update_entry_title()
-    _check_primary_config_entry(device_entry.primary_config_entry)
 
     unsub = async_track_device_registry_updated_event(
-        hass, [device_id], _async_device_registry_updated
+        hass, [tracked_device_id], _async_device_registry_updated
     )
     entry.async_on_unload(unsub)
 
@@ -255,7 +282,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
 
-    _LOGGER.info("Unload entry")
+    _LOGGER.debug("Unload entry")
     await hass.config_entries.async_unload_platforms(entry, [Platform.BINARY_SENSOR])
 
     unsub_runtime = getattr(entry, "runtime_data", None)
